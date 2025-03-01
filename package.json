@@ -1,0 +1,28 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "server for react dermafind app",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "author": "Alison Pariela",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.6.8",
+    "canvas": "^2.11.2",
+    "chai-http": "^4.4.0",
+    "express": "^4.19.2",
+    "fs": "^0.0.1-security",
+    "jimp": "^0.22.12",
+    "mongodb": "^6.5.0",
+    "mongoose": "^8.3.2",
+    "multer": "^1.4.5-lts.1",
+    "request": "^2.88.2",
+    "supertest": "^7.0.0"
+  },
+  "devDependencies": {
+    "chai": "^5.1.0",
+    "mocha": "^10.4.0"
+  }
+}
