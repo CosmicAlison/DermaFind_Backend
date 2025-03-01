@@ -162,7 +162,7 @@ app.post('/detect', upload.single('image'), async (req, res)=>{
             method: "POST",
             url: "https://detect.roboflow.com/acne-zqozl/2",
             params: {
-                api_key: "3vWzhnIQgKpGS53JHXtL",
+                api_key: process.env.API_KEY_ROBOFLOW,
                 confidence: "1"
             },
             data: image,
