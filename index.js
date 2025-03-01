@@ -8,6 +8,7 @@ const axios = require('axios');
 const { createCanvas, loadImage } = require('canvas');
 const mongoose = require('mongoose');
 const Jimp = require('jimp');
+require('dotenv').config();
 
 mongoose.connect(process.env.MONGO_URI);
 
