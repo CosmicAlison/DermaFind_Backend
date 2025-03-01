@@ -9,7 +9,7 @@ const { createCanvas, loadImage } = require('canvas');
 const mongoose = require('mongoose');
 const Jimp = require('jimp');
 
-mongoose.connect("mongodb://localhost:27017/data");
+mongoose.connect(process.env.MONGO_URI);
 
 const userSchema = new mongoose.Schema({
     activityLevel: String,
