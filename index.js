@@ -11,6 +11,16 @@ const Jimp = require('jimp');
 require('dotenv').config();
 
 mongoose.connect(process.env.MONGO_URI);
+mongoose.set('debug', true);
+
+mongoose.connection.on('connected', () => {
+    console.log('Connected to MongoDB');
+});
+
+mongoose.connection.on('error', (err) => {
+    console.error('MongoDB connection error:', err);
+});
+
 
 const userSchema = new mongoose.Schema({
     activityLevel: String,
@@ -19,7 +29,8 @@ const userSchema = new mongoose.Schema({
     medication: Boolean, 
     name: String,
     skinHealth: String, 
-    weight: String 
+    weight: String,
+    email: String
 }, { collection : 'Users' });
 
 const userModel = mongoose.model("Users", userSchema);
@@ -84,12 +95,10 @@ app.get('/user', async (req, res) => {
     } 
 });
 
-app.post('/users', async (req, res) => {
+app.post('/createUser', async (req, res) => {
     try {
         const userData = req.body;
-
-        const db = client.db("dermafind");
-        const result = await userModel.insertOne(userData);
+        const result = await userModel.create(userData);
         res.status(201).json({ message: 'User created successfully', user: result.ops[0] });
     } catch (error) {
         console.error('Error creating user:', error);
