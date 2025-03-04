@@ -44,7 +44,7 @@ Ensure you have **Node.js** and **MongoDB** installed on your system.
 ### Installation Steps
 1. **Clone the repository**
 
-   git clone https://github.com/yourusername/DermaFind_Backend.git
+   git clone https://github.com/CosmicAlison/DermaFind_Backend.git
    cd DermaFind_Backend
 
 2. **Install dependencies**
