@@ -99,7 +99,7 @@ app.post('/createUser', async (req, res) => {
     try {
         const userData = req.body;
         const result = await userModel.create(userData);
-        res.status(201).json({ message: 'User created successfully', user: result.ops[0] });
+        res.status(201).json({ message: 'User created successfully', user: result});
     } catch (error) {
         console.error('Error creating user:', error);
         res.status(500).json({ message: 'Internal Server Error' });
