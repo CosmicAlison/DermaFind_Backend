@@ -54,10 +54,12 @@ Ensure you have **Node.js** and **MongoDB** installed on your system.
 3. **Set up environment variables** in a `.env` file:
 
    PORT=3000
+   
    MONGO_URI=your_mongodb_uri
+   
    API_KEY_ROBOFLOW=your_roboflow_api_key
 
-4. **Run the server**
+5. **Run the server**
 
    npm start
 
