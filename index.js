@@ -167,7 +167,7 @@ app.post('/detect', upload.single('image'), async (req, res)=>{
         const image = fs.readFileSync(req.file.path, {
             encoding: "base64"
         });
-        axios({
+        response = axios({
             method: "POST",
             url: "https://detect.roboflow.com/acne-zqozl/2",
             params: {
@@ -182,57 +182,37 @@ app.post('/detect', upload.single('image'), async (req, res)=>{
         .then(function(response) {
             console.log(response.data);
             const predictions = response.data.predictions;
-            //const numb = predictions.length();
-            rotateImage();
-            loadImage("./uploads/rotate1.png").then(function(img){
-            const imgWidth = img.width;
-            const imgHeight = img.height;
-            const canvas = createCanvas(imgHeight,imgWidth);
-            const ctx = canvas.getContext('2d');
-            // Rotate the canvas context by 90 degrees clockwise to draw the image
-            //ctx.translate(imgWidth, 0);
-            //ctx.rotate(-Math.PI / 2);
-           // Draw the rotated image onto the canvas
-            ctx.drawImage(img, 0, 0);
-            // Reset the canvas rotation
-            //ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transformation matrix
-            // Draw bounding boxes and labels
-            ctx.strokeStyle = '#FF0000'; // Red color for bounding boxes
-            ctx.font = '20px Arial'; // Font for labels
-            for (const prediction of predictions) {
-              const x1 = prediction.x - prediction.width / 2;
-              const x2 = prediction.x + prediction.width / 2;
-              const y1 = prediction.y - prediction.height / 2;
-              const y2 = prediction.y + prediction.height / 2;
 
-              // Draw bounding box
-              ctx.rect(x1, y1, prediction.width, prediction.height);
-              ctx.stroke();
+            img = loadImage(req.file.path)
+            .then(function(img){
+                const canvas = createCanvas(img.width, img.height);
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, img.width, img.height);
 
-              // Draw label
-              ctx.fillText(prediction.class, x1, y1 - 5); // Place label above the bounding box
-            }
-            
-            // Convert canvas to image
-            // Save the canvas image 
-            const out = fs.createWriteStream('./uploads/detected_image.png');
-            const stream = canvas.createPNGStream();
-            stream.on('data', (chunk) => {
-                out.write(chunk);
-            });
+                // Draw bounding boxes and labels
+                ctx.strokeStyle = '#FF0000'; // Red color for bounding boxes
+                ctx.lineWidth = 2;
+                ctx.font = '20px Arial'; // Font for labels
+                ctx.fillStyle = 'red';
 
-            stream.on('end', () => {
-                out.end();
-                console.log('The PNG file was created successfully');
-            });
+                for (const prediction of predictions) {
+                    const x1 = prediction.x - prediction.width / 2;
+                    const y1 = prediction.y - prediction.height / 2;
 
-            stream.on('error', (err) => {
-                console.error('Error creating PNG file:', err);
-            });
-        });})
-        .catch(function(error) {
-            console.log(error.message);
-        });
+                    // Draw bounding box
+                    ctx.beginPath();
+                    ctx.rect(x1, y1, prediction.width, prediction.height);
+                    ctx.stroke();
+
+                    // Draw label
+                    ctx.fillText(prediction.class, x1, y1 - 5);
+                }
+
+                res.setHeader('Content-Type', 'image/png');
+                canvas.createPNGStream().pipe(res);
+                    })
+
+        })
     }
     catch(e){
         console.log(e);
