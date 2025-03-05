@@ -208,10 +208,11 @@ app.post('/detect', upload.single('image'), async (req, res)=>{
                     ctx.fillText(prediction.class, x1, y1 - 5);
                 }
 
-                res.setHeader('Content-Type', 'image/png');
-                canvas.createPNGStream().pipe(res);
-                    })
+                const base64Image = canvas.toBuffer('image/png').toString('base64');
 
+                // Send JSON response with base64 image
+                res.json({ image: `data:image/png;base64,${base64Image}` });
+                })
         })
     }
     catch(e){
