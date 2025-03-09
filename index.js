@@ -77,7 +77,7 @@ app.get('/getScans', async(req, res)=>{
 
         const scans = await ScansModel.find({ userID: user._id });
         if (debug) console.log("Scans: "+ scans);
-        res.json({ scans });
+        res.json( scans );
 
     } catch (error) {
         console.error(error);
