@@ -8,6 +8,7 @@ const axios = require('axios');
 const { createCanvas, loadImage } = require('canvas');
 const mongoose = require('mongoose');
 const Jimp = require('jimp');
+const debug = true;
 require('dotenv').config();
 
 mongoose.connect(process.env.MONGO_URI);
@@ -39,7 +40,7 @@ const discussionsSchema = new mongoose.Schema({
     content: String,
     author: String, 
     comments: Array, 
-    likes: String, 
+    likes: Number, 
     time: String,
     title: String, 
     
@@ -48,12 +49,15 @@ const discussionsSchema = new mongoose.Schema({
 const DiscussionModel = mongoose.model("Discussions", discussionsSchema);
 
 const scansSchema = new mongoose.Schema({
-    content: String,
-    author: String, 
-    comments: Array, 
-    likes: String, 
-    time: String,
-    title: String, 
+    result: Number,
+    date: Date,
+    userID: String, 
+    blackheads: Number, 
+    darkspots: Number, 
+    papules: Number,
+    pustules: Number, 
+    whiteheads: Number,
+    nodules: Number
     
 }, { collection : 'Scans' });
 
@@ -63,11 +67,42 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true })); 
 
 
-app.get('/discussions', async (req, res) => {
-    console.log("Getting discussions");
+app.get('/getScans', async(req, res)=>{
+    try {
+        const email = req.query.email;  
+        if (!email) return res.status(400).json({ error: 'Email is required' });
+
+        const user = await userModel.findOne({ email });
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        const scans = await ScansModel.find({ userID: user._id });
+        if (debug) console.log("Scans: "+ scans);
+        res.json({ success: true, scans });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Server error' });
+    }
+
+});
+
+async function saveScan(user, score, lesions){
+    const scanData = {
+        result: score,
+        date: new Date(),
+        userID: user._id,
+        ...lesions
+    }
+    const newScan = await ScansModel.create(scanData);
+    if (debug) console.log("New scan: "+ newScan);
+}
+
+
+app.get('/getDiscussions', async (req, res) => {
+    if (debug) console.log("Getting discussions");
     try { 
         const discussions = await DiscussionModel.find({});
-        console.log(discussions);
+        if (debug) console.log(discussions);
         res.json(discussions);
       }
     catch (error) {
@@ -76,7 +111,22 @@ app.get('/discussions', async (req, res) => {
     } 
 });
 
-app.get('/user', async (req, res) => {
+app.post('/createForumPost', async(req, res) => {
+    if(debug) console.log("Creating Post");
+    try{
+        const postData = req.body;
+        postData.likes = 0;
+        postData.comments = [];
+        postData.time = new Date.toString();
+        const result = await userModel.create(postData);
+        res.status(201).json({ message: 'Post created successfully', user: result});
+    } catch (error) {
+        console.error('Error creating post:', error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+})
+
+app.get('/getUser', async (req, res) => {
     try {
         const userEmail = req.query.email;
 
@@ -87,6 +137,7 @@ app.get('/user', async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
+        if (debug) console.log('User retrieved:  '+user);
 
         res.json(user);
     } catch (error) {
@@ -152,6 +203,16 @@ const severity = [
 
 ]
 
+const classifySeverity = (lesions, inflammatory, nodes) => {
+    let score = 0;
+    for (let level of severity) {
+        if (lesions >= level.lesions || inflammatory >= level.inflammatory || nodes >= level.nodes) {
+            score = level.grade;
+        }
+    }
+    return score;
+};
+
 async function rotateImage() {
     const image = await Jimp.read(
         "./uploads/image.jpg");
@@ -162,11 +223,20 @@ async function rotateImage() {
 }
 
 app.post('/detect', upload.single('image'), async (req, res)=>{
-    console.log('Received image:', req.file);
+    if (debug) console.log('Received image:', req.file);
     try{
         const image = fs.readFileSync(req.file.path, {
             encoding: "base64"
         });
+        const userEmail = req.body.email; 
+        if (debug) console.log('Received Image: '+ userEmail);
+        
+        const user = await userModel.findOne({ email: userEmail });
+        if (!user) {
+            console.error('User not found');
+            return;
+        }
+
         response = axios({
             method: "POST",
             url: "https://detect.roboflow.com/acne-zqozl/2",
@@ -179,9 +249,34 @@ app.post('/detect', upload.single('image'), async (req, res)=>{
                 "Content-Type": "application/x-www-form-urlencoded"
             }
         })
-        .then(function(response) {
-            console.log(response.data);
+        .then(async(response) => {
+            if (debug) console.log(response.data);
+            const lesionCounts = { blackheads: 0, darkspots: 0, papules: 0, pustules: 0, whiteheads: 0, nodules: 0 };
+
+            const classMapping = {
+                'blackhead': 'blackheads',
+                'dark spot': 'darkspots',
+                'papule': 'papules',
+                'pustule': 'pustules',
+                'whitehead': 'whiteheads',
+                'nodule': 'nodules'
+            };
+
             const predictions = response.data.predictions;
+
+            predictions.forEach(prediction => {
+                const mappedClass = classMapping[prediction.class];
+                if (mappedClass) {
+                    lesionCounts[mappedClass]++;
+                }
+            });
+    
+            // Total lesions and inflammatory count
+            const totalLesions = Object.values(lesionCounts).reduce((sum, count) => sum + count, 0);
+            const inflammatoryLesions = lesionCounts.papules + lesionCounts.pustules;
+            const score = classifySeverity(totalLesions, inflammatoryLesions, lesionCounts.nodules);
+            
+            saveScan(user, score, lesionCounts);
 
             img = loadImage(req.file.path)
             .then(function(img){
