@@ -8,11 +8,11 @@ const axios = require('axios');
 const { createCanvas, loadImage } = require('canvas');
 const mongoose = require('mongoose');
 const Jimp = require('jimp');
-const debug = true;
+const debug = false;
 require('dotenv').config();
 
 mongoose.connect(process.env.MONGO_URI);
-mongoose.set('debug', true);
+mongoose.set('debug', false);
 
 mongoose.connection.on('connected', () => {
     console.log('Connected to MongoDB');
